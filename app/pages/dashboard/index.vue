@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { toast } from "vue-sonner";
 import type { Database } from "~~/types/database.types";
+import type { BookingWithService } from "~~/types";
 
 const supabase = useSupabaseClient<Database>();
 const user = useSupabaseUser();
 
 // States
 const services = ref<Database["public"]["Tables"]["services"]["Row"][]>([]);
-const myBookings = ref<any[]>([]); // Ideally, write the exact interface with JOIN here, leaving any for speed
+const myBookings = ref<BookingWithService[]>([]);
 
 // New booking form
 const form = ref({
@@ -83,12 +84,7 @@ async function createBooking() {
 
 // Cancel booking
 async function cancelBooking(bookingId: string) {
-  if (!confirm("Are you sure you want to cancel the booking?")) {
-    toast.error("Booking cancelled", {
-      description: "Booking cancelled",
-    });
-    return;
-  }
+  if (!confirm("Are you sure you want to cancel the booking?")) return;
 
   // Our RLS policy allows this action only if the status is 'pending'
   const { error } = await supabase
@@ -138,9 +134,12 @@ onMounted(() => {
 
           <form @submit.prevent="createBooking" class="space-y-4">
             <div>
-              <label class="block text-sm text-gray-600 mb-1">Service</label>
+              <label for="service" class="block text-sm text-gray-600 mb-1"
+                >Service</label
+              >
               <select
                 v-model="form.serviceId"
+                id="service"
                 class="w-full border p-2 rounded"
                 required
               >
@@ -152,19 +151,25 @@ onMounted(() => {
             </div>
 
             <div>
-              <label class="block text-sm text-gray-600 mb-1">Date</label>
+              <label for="date" class="block text-sm text-gray-600 mb-1"
+                >Date</label
+              >
               <input
                 type="date"
                 v-model="form.date"
+                id="date"
                 class="w-full border p-2 rounded"
                 required
               />
             </div>
 
             <div>
-              <label class="block text-sm text-gray-600 mb-1">Time</label>
+              <label for="time" class="block text-sm text-gray-600 mb-1"
+                >Time</label
+              >
               <select
                 v-model="form.time"
+                id="time"
                 class="w-full border p-2 rounded"
                 required
               >

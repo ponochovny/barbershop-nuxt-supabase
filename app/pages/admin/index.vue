@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import type { Database } from "~~/types/database.types";
+import type { BookingWithService } from "~~/types";
 
-const bookings = ref<any[]>([]); // Ideally, write the exact interface with JOIN here, leaving any for speed
+const bookings = ref<BookingWithService[]>([]);
 
 const supabase = useSupabaseClient<Database>();
 
