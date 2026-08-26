@@ -120,8 +120,8 @@
   body {
     @apply bg-background text-foreground;
   }
-  button,
-  [role="button"] {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
     cursor: pointer;
   }
   h1 {
@@ -143,9 +143,9 @@
     @apply text-base font-medium my-1;
   }
   p {
-    @apply text-base text-gray-800 leading-relaxed mb-4;
+    @apply text-base text-foreground leading-relaxed mb-4;
   }
   a {
-    @apply text-blue-600 underline hover:text-blue-800;
+    @apply text-primary underline hover:text-primary/80;
   }
 }
