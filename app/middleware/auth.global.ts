@@ -2,7 +2,6 @@ import type { Database } from "~~/types/database.types";
 
 export default defineNuxtRouteMiddleware(async (to, from) => {
   const user = useSupabaseUser();
-  console.log("auth middleware", user);
 
   // If the user is not authorized, the supabase module will redirect him to /login (according to nuxt.config.ts)
   if (!user.value) return;
@@ -17,8 +16,6 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
       .select("role")
       .eq("id", user.value.sub)
       .single();
-
-    console.log("auth middleware", profile);
 
     // If the profile is not found or the role is not admin, redirect to the client's cabinet
     if (!profile || profile.role !== "admin") {

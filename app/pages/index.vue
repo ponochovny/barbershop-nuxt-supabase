@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import BookingsList from "~/widgets/bookings-list.vue";
+import ServicesList from "~/widgets/services-list.vue";
 import type { Database } from "~~/types/database.types";
 
 // Anywhere in the project:
@@ -11,18 +13,7 @@ const { data: services } = await supabase.from("services").select("*");
 
 <template>
   <div>
-    <h2>Bookings:</h2>
-    <ul>
-      <li v-for="booking in bookings" :key="booking.id">
-        {{ booking.id }} || {{ booking.service_id }} || {{ booking.user_id }} ||
-        {{ booking.start_time }} || {{ booking.status }}
-      </li>
-    </ul>
-    <h2>Services:</h2>
-    <ul>
-      <li v-for="service in services" :key="service.id">
-        {{ service.name }} - {{ service.price }}
-      </li>
-    </ul>
+    <BookingsList :bookings="bookings" class="mt-8" />
+    <ServicesList :services="services" class="mt-8" />
   </div>
 </template>

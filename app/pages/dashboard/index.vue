@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import BookingsList from "~/widgets/bookings-list.vue";
 import type { Database } from "~~/types/database.types";
 
 const user = useSupabaseUser();
@@ -10,15 +11,7 @@ const { data: bookings } = await supabase.from("bookings").select("*");
   <div>
     <h1>Dashboard</h1>
     <p>User: {{ user?.email }}</p>
-    <button @click="supabase.auth.signOut()">Logout</button>
+    <Button variant="outline" @click="supabase.auth.signOut()">Logout</Button>
   </div>
-  <div>
-    <h2>Bookings:</h2>
-    <ul>
-      <li v-for="booking in bookings" :key="booking.id">
-        {{ booking.id }} || {{ booking.service_id }} || {{ booking.user_id }} ||
-        {{ booking.start_time }} || {{ booking.status }}
-      </li>
-    </ul>
-  </div>
+  <BookingsList :bookings="bookings" class="mt-8" />
 </template>
