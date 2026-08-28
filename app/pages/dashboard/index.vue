@@ -46,6 +46,7 @@ async function fetchMyBookings() {
       service:services (name, duration_minutes)
     `,
     )
+    .eq("user_id", user.value!.sub)
     .order("start_time", { ascending: false });
 
   if (data) myBookings.value = data;
