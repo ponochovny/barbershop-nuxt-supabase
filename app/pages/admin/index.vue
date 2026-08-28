@@ -4,9 +4,16 @@ import type { Database } from "~~/types/database.types";
 
 const supabase = useSupabaseClient<Database>();
 const bookings = ref<any[]>([]);
+const queryError = ref<string | null>(null);
+const hasLoaded = ref(false);
+
+let fetchGeneration = 0;
 
 // Get all bookings (only admin can see thanks to RLS)
 async function fetchAllBookings() {
+  const currentGen = ++fetchGeneration;
+  queryError.value = null;
+  hasLoaded.value = false;
   const { data, error } = await supabase
     .from("bookings")
     .select(
@@ -22,10 +29,16 @@ async function fetchAllBookings() {
 
   if (error) {
     console.error("Error loading records:", error);
+    if (currentGen === fetchGeneration) {
+      queryError.value = error.message;
+    }
     return;
   }
 
-  if (data) bookings.value = data;
+  if (data && currentGen === fetchGeneration) {
+    bookings.value = data;
+    hasLoaded.value = true;
+  }
 }
 
 // Update booking status
@@ -44,7 +57,12 @@ async function updateBookingStatus(
   }
 
   toast.success("Status updated successfully");
-  // No need to call fetchAllBookings() manually, as Realtime subscription will work!
+  
+  // Update local state immediately
+  const booking = bookings.value.find((b) => b.id === id);
+  if (booking) {
+    booking.status = newStatus;
+  }
 }
 
 // Realtime setup
@@ -121,7 +139,21 @@ onUnmounted(() => {
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-if="bookings.length === 0">
+            <tr v-if="queryError">
+              <td
+                colspan="5"
+                class="px-6 py-4 text-center text-sm text-red-500"
+              >
+                Error loading records: {{ queryError }}
+                <button
+                  @click="fetchAllBookings"
+                  class="ml-2 text-blue-600 hover:underline font-medium"
+                >
+                  Retry
+                </button>
+              </td>
+            </tr>
+            <tr v-else-if="hasLoaded && bookings.length === 0">
               <td
                 colspan="5"
                 class="px-6 py-4 text-center text-sm text-gray-500"
