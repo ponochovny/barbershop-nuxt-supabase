@@ -1,6 +1,41 @@
+const GOOGLE_API_TIMEOUT_MS = 10_000
+
+class RetryableTimeoutError extends Error {
+  readonly retryable = true
+
+  constructor(message: string) {
+    super(message)
+    this.name = 'RetryableTimeoutError'
+  }
+}
+
+async function fetchGoogleWithDeadline(
+  input: string,
+  init: RequestInit,
+): Promise<Response> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), GOOGLE_API_TIMEOUT_MS)
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal })
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new RetryableTimeoutError(
+        `Google API request timed out after ${GOOGLE_API_TIMEOUT_MS}ms`,
+      )
+    }
+
+    throw error
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 // Function to exchange Refresh Token for Access Token
 async function getGoogleAccessToken() {
-  const response = await fetch('https://oauth2.googleapis.com/token', {
+  const response = await fetchGoogleWithDeadline(
+    'https://oauth2.googleapis.com/token',
+    {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -9,7 +44,8 @@ async function getGoogleAccessToken() {
       refresh_token: Deno.env.get('GOOGLE_REFRESH_TOKEN') || '',
       grant_type: 'refresh_token',
     }),
-  });
+    },
+  )
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -39,8 +75,10 @@ Deno.serve(async (req) => {
       // Calculating the end time (for example +1 hour)
       const startDate = new Date(booking.start_time);
       const endDate = new Date(startDate.getTime() + 60 * 60000);
+      const eventId = String(booking.id).replace(/[^a-z0-9]/gi, '').toLowerCase();
 
       const event = {
+        id: eventId,
         summary: 'New appointment (Booking)',
         start: {
           dateTime: startDate.toISOString(),
@@ -53,14 +91,23 @@ Deno.serve(async (req) => {
       };
 
       // Sending an event to the calendar
-      const calendarRes = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+    const calendarRes = await fetchGoogleWithDeadline(
+      'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+      {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(event),
-      });
+        },
+    )
+
+      if (calendarRes.status === 409) {
+        return new Response(JSON.stringify({ success: true, duplicate: true }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
 
       if (!calendarRes.ok) {
         throw new Error(`Calendar API Error: ${await calendarRes.text()}`);
@@ -74,10 +121,21 @@ Deno.serve(async (req) => {
     return new Response("Skipped: conditions not met", { status: 200 });
 
   } catch (error: any) {
-    console.error("Function error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), { 
-      status: 400, 
-      headers: { "Content-Type": "application/json" }
-    });
+    console.error('Function error:', error.message)
+
+    if (error instanceof RetryableTimeoutError) {
+      return new Response(
+        JSON.stringify({ error: error.message, retryable: true }),
+        {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      )
+    }
+
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 });

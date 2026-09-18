@@ -4,16 +4,26 @@ import type { Database } from '~~/types/database.types'
 const user = useSupabaseUser()
 const supabase = useSupabaseClient<Database>()
 const isAdmin = ref(false)
+let roleRequestGeneration = 0
 
 async function loadRole() {
+	const requestGeneration = ++roleRequestGeneration
+	const userId = user.value?.sub
 	isAdmin.value = false
-	if (!user.value) return
+	if (!userId) return
 
 	const { data: profile } = await supabase
 		.from('profiles')
 		.select('role')
-		.eq('id', user.value.sub)
+		.eq('id', userId)
 		.maybeSingle()
+
+	if (
+		requestGeneration !== roleRequestGeneration ||
+		user.value?.sub !== userId
+	) {
+		return
+	}
 
 	isAdmin.value = profile?.role === 'admin'
 }
@@ -60,6 +70,12 @@ watch(user, loadRole, { immediate: true })
 					>Admin</NuxtLink
 				>
 			</nav>
+			<NuxtLink
+				v-if="isAdmin"
+				to="/admin"
+				class="mr-4 text-sm font-bold text-[#6e7972] transition-colors hover:text-[#b55b3e] sm:hidden"
+				>Admin</NuxtLink
+			>
 			<NuxtLink
 				v-if="user"
 				to="/dashboard"

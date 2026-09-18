@@ -51,26 +51,33 @@ async function updateBookingStatus(
 	updatingBookings.value.add(id)
 
 	try {
-		const { error } = await supabase
+		const { data, error } = await supabase
 			.from('bookings')
 			.update({ status: newStatus })
 			.eq('id', id)
+			.eq('status', 'pending')
+			.select('id')
+			.maybeSingle()
 
 		if (error) {
 			toast.error('Error updating status: ' + error.message)
 			return
 		}
 
-		toast.success('Status updated successfully')
+		if (!data) {
+			toast.error('This booking is no longer pending')
+			await fetchAllBookings()
+			return
+		}
 
-		// Invalidate older list requests before applying results
-		fetchGeneration++
+		toast.success('Status updated successfully')
 
 		// Update local state immediately
 		const booking = bookings.value.find((b) => b.id === id)
 		if (booking) {
 			booking.status = newStatus
 		}
+		await fetchAllBookings()
 	} finally {
 		updatingBookings.value.delete(id)
 	}

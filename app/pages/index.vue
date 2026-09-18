@@ -4,7 +4,25 @@ import type { Database } from '~~/types/database.types'
 
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
-const { data: services } = await supabase.from('services').select('*')
+type Service = Database['public']['Tables']['services']['Row']
+
+const services = ref<Service[]>([])
+const servicesError = ref<string | null>(null)
+
+async function fetchServices() {
+	const { data, error } = await supabase.from('services').select('*')
+
+	if (error) {
+		servicesError.value = error.message
+		services.value = []
+		return
+	}
+
+	servicesError.value = null
+	services.value = data ?? []
+}
+
+await fetchServices()
 </script>
 
 <template>
@@ -163,7 +181,27 @@ const { data: services } = await supabase.from('services').select('*')
 					No unnecessary moves.<br />Only what works.
 				</p>
 			</div>
-			<ServicesList :services="services" />
+			<div
+				v-if="servicesError"
+				class="flex flex-col items-start gap-4 border border-[#e7c5b7] bg-[#fff8f5] p-6 text-[#8d4935]"
+			>
+				<div class="flex items-center gap-2 font-semibold">
+					<Icon name="lucide:circle-alert" class="size-5" aria-hidden="true" />
+					<span>We couldn't load the services.</span>
+				</div>
+				<p class="m-0 text-sm text-[#9d6d5e]">
+					Please check your connection and try again.
+				</p>
+				<button
+					type="button"
+					class="inline-flex items-center gap-2 bg-[#18201e] px-4 py-2 text-xs font-extrabold uppercase tracking-wide text-white transition hover:bg-[#b55b3e]"
+					@click="fetchServices"
+				>
+					<Icon name="lucide:refresh-cw" class="size-4" aria-hidden="true" />
+					Retry
+				</button>
+			</div>
+			<ServicesList v-else :services="services" />
 		</section>
 	</div>
 </template>
