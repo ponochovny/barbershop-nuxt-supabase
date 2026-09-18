@@ -42,9 +42,12 @@ const serviceImage = (name: string) => {
 			<div
 				class="relative aspect-[1.7/1] overflow-hidden bg-[#d9e2dc] sm:aspect-square"
 			>
-				<img
+				<NuxtImg
 					:src="serviceImage(service.name)"
 					:alt="service.name"
+					width="800"
+					height="800"
+					format="webp"
 					class="h-full w-full object-cover saturate-[.72]"
 				/>
 				<span

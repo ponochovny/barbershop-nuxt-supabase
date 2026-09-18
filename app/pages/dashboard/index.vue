@@ -28,6 +28,35 @@ const timeSlots = [
 	'17:00',
 ]
 
+const serviceImage = (name: string) => {
+	return (
+		{
+			'Classic Haircut':
+				'https://images.squarespace-cdn.com/content/v1/5bc91be24d87116f3a90363b/1578698382919-PDRL2SQBOS2GFCMSE088/image.jpg',
+			'Beard Shaping':
+				'https://cdn.prod.website-files.com/5cb569e54ca2fddd5451cbb2/64261d87fab1f4ea78ef1621_Beard.jpg',
+			'Package (Haircut + Beard)':
+				'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?q=80&w=688&auto=format&fit=crop',
+			"Children's Haircut":
+				'https://cdn.motherhood.com.my/wp-content/uploads/2022/10/05160011/Short-Textured-Haircut-with-Low-Taper-Fade.jpg',
+		}[name] || 'https://placehold.co/800x500/e7eee8/18201e?text=North+Blade'
+	)
+}
+
+const formatBookingDate = (value: string) =>
+	new Date(value).toLocaleString('en-US', {
+		weekday: 'short',
+		month: 'short',
+		day: 'numeric',
+		year: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit',
+	})
+
+const isExpired = (value: string) => new Date(value).getTime() <= Date.now()
+const canCancel = (booking: BookingWithService) =>
+	booking.status === 'pending' && !isExpired(booking.start_time)
+
 // Get list of services
 async function fetchServices() {
 	const { data } = await supabase.from('services').select('*')
@@ -119,92 +148,195 @@ onMounted(() => {
 <template>
 	<div class="min-h-screen bg-gray-50 p-8">
 		<div class="max-w-5xl mx-auto">
-			<div class="flex justify-between items-center mb-8">
-				<h1 class="text-3xl font-bold">Personal account</h1>
-				<button @click="logout" class="text-red-600 hover:underline">
+			<div class="mb-8 flex items-end justify-between gap-4">
+				<div>
+					<p
+						class="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-[#b55b3e]"
+					>
+						Your space
+					</p>
+					<h1 class="m-0 text-3xl font-bold text-[#18201e]">
+						Personal account
+					</h1>
+				</div>
+				<button
+					@click="logout"
+					class="inline-flex items-center gap-2 border border-[#e7c5b7] bg-[#fff8f5] px-4 py-2 text-xs font-extrabold uppercase tracking-wide text-[#9b4b35] transition hover:border-[#b55b3e] hover:bg-[#b55b3e] hover:text-white"
+				>
+					<Icon name="lucide:log-out" class="size-4" aria-hidden="true" />
 					Log out
 				</button>
 			</div>
 
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-				<!-- Left column: Form -->
-				<div
-					class="md:col-span-1 bg-white p-6 rounded-lg shadow-sm border border-gray-100 self-start"
+			<div
+				class="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(22rem,0.9fr)_minmax(0,1.4fr)]"
+			>
+				<section
+					class="rounded-xl border border-[#dfe7e1] bg-white p-5 shadow-[0_1rem_3rem_rgba(24,32,30,0.06)] sm:p-6"
 				>
-					<h2 class="text-xl font-semibold mb-4">New booking</h2>
-
-					<form @submit.prevent="createBooking" class="space-y-4">
+					<div class="mb-5 flex items-start justify-between gap-4">
 						<div>
-							<label for="service" class="block text-sm text-gray-600 mb-1"
-								>Service</label
+							<p
+								class="mb-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#b55b3e]"
 							>
-							<select
-								v-model="form.serviceId"
-								id="service"
-								class="w-full border p-2 rounded"
-								required
+								Step 01
+							</p>
+							<h2 class="m-0 text-xl font-semibold text-[#18201e]">
+								New booking
+							</h2>
+						</div>
+						<Icon
+							name="lucide:calendar-plus-2"
+							class="size-5 text-[#b55b3e]"
+							aria-hidden="true"
+						/>
+					</div>
+
+					<form @submit.prevent="createBooking" class="space-y-5">
+						<fieldset>
+							<legend class="mb-3 text-sm font-semibold text-[#53615b]">
+								Choose a service
+							</legend>
+							<div class="grid grid-cols-2 gap-2">
+								<label
+									v-for="service in services"
+									:key="service.id"
+									:class="
+										form.serviceId === service.id
+											? 'border-[#b55b3e] ring-2 ring-[#e9a98d]/50'
+											: 'border-[#e1e6e1] hover:border-[#b9c0ba]'
+									"
+									class="group relative cursor-pointer overflow-hidden border bg-[#f7faf7] transition"
+								>
+									<input
+										v-model="form.serviceId"
+										type="radio"
+										:value="service.id"
+										class="sr-only"
+										required
+									/>
+									<NuxtImg
+										:src="serviceImage(service.name)"
+										:alt="service.name"
+										width="320"
+										height="190"
+										format="webp"
+										class="h-20 w-full object-cover saturate-[.72] transition group-hover:scale-105"
+									/>
+									<span class="block p-2">
+										<span
+											class="block truncate text-xs font-bold text-[#18201e]"
+											>{{ service.name }}</span
+										>
+										<span
+											class="mt-1 flex items-center justify-between text-[10px] text-[#89928d]"
+											><span>{{ service.duration_minutes }} min</span
+											><strong class="text-[#b55b3e]"
+												>{{ service.price }} ₴</strong
+											></span
+										>
+									</span>
+									<Icon
+										v-if="form.serviceId === service.id"
+										name="lucide:circle-check"
+										class="absolute right-2 top-2 size-4 rounded-full bg-white text-[#b55b3e]"
+										aria-hidden="true"
+									/>
+								</label>
+							</div>
+						</fieldset>
+
+						<div class="grid grid-cols-2 gap-3">
+							<label
+								for="date"
+								class="block text-sm font-semibold text-[#53615b]"
 							>
-								<option disabled value="">Select a service...</option>
-								<option v-for="s in services" :key="s.id" :value="s.id">
-									{{ s.name }} ({{ s.price }} ₴)
-								</option>
-							</select>
+								Date
+								<input
+									type="date"
+									v-model="form.date"
+									id="date"
+									class="mt-2 w-full rounded border border-[#dfe7e1] bg-[#f7faf7] p-2.5 text-sm outline-none focus:border-[#b55b3e]"
+									required
+								/>
+							</label>
+							<label
+								for="time"
+								class="block text-sm font-semibold text-[#53615b]"
+							>
+								Time
+								<select
+									v-model="form.time"
+									id="time"
+									class="mt-2 w-full rounded border border-[#dfe7e1] bg-[#f7faf7] p-2.5 text-sm outline-none focus:border-[#b55b3e]"
+									required
+								>
+									<option v-for="t in timeSlots" :key="t" :value="t">
+										{{ t }}
+									</option>
+								</select>
+							</label>
 						</div>
 
-						<div>
-							<label for="date" class="block text-sm text-gray-600 mb-1"
-								>Date</label
-							>
-							<input
-								type="date"
-								v-model="form.date"
-								id="date"
-								class="w-full border p-2 rounded"
-								required
+						<Button type="submit" class="w-full" size="lg"
+							><Icon
+								name="lucide:calendar-check-2"
+								class="size-4"
+								aria-hidden="true"
 							/>
-						</div>
-
-						<div>
-							<label for="time" class="block text-sm text-gray-600 mb-1"
-								>Time</label
-							>
-							<select
-								v-model="form.time"
-								id="time"
-								class="w-full border p-2 rounded"
-								required
-							>
-								<option v-for="t in timeSlots" :key="t" :value="t">
-									{{ t }}
-								</option>
-							</select>
-						</div>
-
-						<Button type="submit" class="w-full" size="lg"> Book </Button>
+							Confirm booking
+						</Button>
 					</form>
-				</div>
+				</section>
 
-				<!-- Right column: My bookings -->
-				<div
-					class="md:col-span-2 bg-white p-6 rounded-lg shadow-sm border border-gray-100"
+				<section
+					class="min-w-0 rounded-xl border border-[#dfe7e1] bg-white p-5 shadow-[0_1rem_3rem_rgba(24,32,30,0.06)] sm:p-6"
 				>
-					<h2 class="text-xl font-semibold mb-4">My bookings</h2>
+					<div class="mb-5 flex items-center justify-between gap-4">
+						<div>
+							<p
+								class="mb-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#b55b3e]"
+							>
+								Your schedule
+							</p>
+							<h2 class="m-0 text-xl font-semibold text-[#18201e]">
+								My bookings
+							</h2>
+						</div>
+						<Icon
+							name="lucide:calendar-days"
+							class="size-5 text-[#b55b3e]"
+							aria-hidden="true"
+						/>
+					</div>
 
-					<div v-if="myBookings.length === 0" class="text-gray-500">
+					<div
+						v-if="myBookings.length === 0"
+						class="border border-dashed border-[#dfe7e1] p-8 text-center text-sm text-[#89928d]"
+					>
 						No bookings yet.
 					</div>
 
-					<div v-else class="space-y-4">
+					<div v-else class="grid gap-3">
 						<div
 							v-for="b in myBookings"
 							:key="b.id"
-							class="border p-4 rounded-lg flex justify-between items-center"
+							class="flex items-center justify-between gap-4 border border-[#e1e6e1] p-4"
 							:class="{ 'opacity-60 bg-gray-50': b.status === 'cancelled' }"
 						>
 							<div>
-								<div class="font-medium text-lg">{{ b.service?.name }}</div>
-								<div class="text-sm text-gray-600">
-									{{ new Date(b.start_time).toLocaleString('en-US') }}
+								<div class="font-medium text-lg text-[#18201e]">
+									{{ b.service?.name }}
+								</div>
+								<div
+									class="mt-1 flex items-center gap-1 text-sm text-[#69736d]"
+								>
+									<Icon
+										name="lucide:clock-3"
+										class="size-4 text-[#b55b3e]"
+										aria-hidden="true"
+									/>
+									{{ formatBookingDate(b.start_time) }}
 								</div>
 								<div class="mt-1">
 									<span
@@ -227,15 +359,21 @@ onMounted(() => {
 
 							<!-- Cancel button visible only for pending status -->
 							<button
-								v-if="b.status === 'pending'"
+								v-if="canCancel(b)"
 								@click="cancelBooking(b.id)"
-								class="text-sm text-red-600 border border-red-200 px-3 py-1 rounded hover:bg-red-50 transition"
+								class="inline-flex items-center gap-1 border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50"
 							>
+								<Icon name="lucide:x" class="size-3.5" aria-hidden="true" />
 								Cancel
 							</button>
+							<span
+								v-else-if="b.status === 'pending' && isExpired(b.start_time)"
+								class="text-right text-[10px] font-semibold uppercase tracking-wide text-[#9b4b35]"
+								>Expired</span
+							>
 						</div>
 					</div>
-				</div>
+				</section>
 			</div>
 		</div>
 	</div>

@@ -38,6 +38,13 @@ async function fetchServices() {
 }
 
 await fetchServices()
+
+useSeoMeta({
+	title: () => 'Home',
+	ogTitle: () => 'Home - North Blade Barbershop',
+	description: () =>
+		'North Blade Barbershop offers expert haircuts and beard care. Book your appointment online and experience top-notch grooming services.',
+})
 </script>
 
 <template>
@@ -94,9 +101,12 @@ await fetchServices()
 				<div
 					class="relative h-full min-h-84 overflow-hidden [clip-path:polygon(8%_0,100%_0,100%_91%,92%_100%,0_100%,0_9%)] sm:min-h-100 lg:min-h-124"
 				>
-					<img
+					<NuxtImg
 						src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=85"
 						alt="Barber at work"
+						width="1200"
+						height="900"
+						format="webp"
 						class="h-full w-full object-cover opacity-90 saturate-[.78]"
 					/>
 					<div
