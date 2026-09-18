@@ -145,7 +145,4 @@
   p {
     @apply text-base text-foreground leading-relaxed mb-4;
   }
-  a {
-    @apply text-primary underline hover:text-primary/80;
-  }
 }

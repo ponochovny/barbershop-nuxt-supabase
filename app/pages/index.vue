@@ -1,16 +1,169 @@
 <script lang="ts" setup>
-import ServicesList from "~/widgets/services-list.vue";
-import type { Database } from "~~/types/database.types";
+import ServicesList from '~/widgets/services-list.vue'
+import type { Database } from '~~/types/database.types'
 
-// Anywhere in the project:
-const supabase = useSupabaseClient<Database>();
-
-// Now when you write a query, you will have 100% autocomplete:
-const { data: services } = await supabase.from("services").select("*");
+const supabase = useSupabaseClient<Database>()
+const user = useSupabaseUser()
+const { data: services } = await supabase.from('services').select('*')
 </script>
 
 <template>
-  <div>
-    <ServicesList :services="services" class="mt-8" />
-  </div>
+	<div class="text-[#18201e]">
+		<section
+			class="grid items-center gap-12 py-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)] lg:gap-20 lg:py-16"
+		>
+			<div class="lg:pl-[clamp(0rem,4vw,4.5rem)]">
+				<p
+					class="mb-5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#b55b3e]"
+				>
+					CITY BARBERSHOP / EST. 2014
+				</p>
+				<h1
+					class="font-serif text-[clamp(3.4rem,6vw,6.5rem)] font-normal leading-[0.92] tracking-[-0.06em]"
+				>
+					Your style.<br />
+					<span class="italic text-[#b55b3e]">Your time.</span>
+				</h1>
+				<p class="my-8 max-w-md text-base leading-7 text-[#69736d]">
+					Haircuts, beard care, and that confident feeling after the chair.
+					Choose a service and book your preferred time in a minute.
+				</p>
+				<div class="flex flex-wrap items-center gap-6">
+					<NuxtLink
+						:to="user ? '/dashboard' : '/login'"
+						class="inline-flex items-center gap-5 bg-[#18201e] px-5 py-4 text-xs font-extrabold uppercase tracking-[0.06em] text-white transition hover:-translate-y-0.5 hover:bg-[#b55b3e]"
+					>
+						Book now
+						<Icon
+							name="lucide:arrow-up-right"
+							class="size-4 text-[#e9a98d]"
+							aria-hidden="true"
+						/>
+					</NuxtLink>
+					<a
+						href="#services"
+						class="border-b border-[#b9c0ba] pb-1 text-xs font-bold text-[#53615b]"
+						>View services</a
+					>
+				</div>
+				<div
+					class="mt-14 flex flex-wrap items-center gap-4 text-lg text-[#89928d]"
+				>
+					<span> <strong>4.9</strong> client rating</span>
+					<span class="h-5 w-px bg-[#d3d8d3]" aria-hidden="true"> </span>
+					<span>Mon–Sun <strong>10:00–20:00</strong> </span>
+				</div>
+			</div>
+			<div
+				class="relative min-h-88 py-4 pr-0 sm:min-h-104 lg:min-h-132 lg:pr-6"
+				aria-label="Barbershop interior"
+			>
+				<div
+					class="relative h-full min-h-84 overflow-hidden [clip-path:polygon(8%_0,100%_0,100%_91%,92%_100%,0_100%,0_9%)] sm:min-h-100 lg:min-h-124"
+				>
+					<img
+						src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=85"
+						alt="Barber at work"
+						class="h-full w-full object-cover opacity-90 saturate-[.78]"
+					/>
+					<div
+						class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-[#0c1512]/85"
+					></div>
+					<div class="absolute bottom-8 left-9 z-1 text-white">
+						<span
+							class="mb-3 block text-[10px] uppercase tracking-[0.16em] text-[#e9a98d]"
+							>01 / atmosphere</span
+						>
+						<strong class="font-serif text-[1.65rem] font-normal leading-tight"
+							>A chair you<br />will want to stay in</strong
+						>
+					</div>
+				</div>
+				<div
+					class="absolute top-6 left-3 z-2 -rotate-3 bg-[#e9a98d] px-4 py-3 text-[11px] font-extrabold text-[#18201e] sm:-left-8"
+				>
+					<Icon
+						name="lucide:sparkles"
+						class="mr-1 inline size-4"
+						aria-hidden="true"
+					/>
+					Your new care ritual
+				</div>
+				<div
+					class="absolute right-0 top-0 font-serif text-lg text-[#d4d9d4] [writing-mode:vertical-rl]"
+				>
+					#08
+				</div>
+			</div>
+		</section>
+
+		<section
+			class="grid border-y border-[#dce1dc] py-5 md:grid-cols-3"
+			aria-label="Benefits"
+		>
+			<div
+				class="grid grid-cols-[2.6rem_1fr] gap-x-3 border-b border-[#dce1dc] py-3 md:border-b-0 md:border-r md:px-8 md:first:pl-0"
+			>
+				<span
+					class="row-span-2 flex h-9 w-9 items-center justify-center rounded-full bg-[#e7eee8] text-[#b55b3e]"
+				>
+					<Icon name="lucide:scissors" class="size-4" aria-hidden="true" />
+				</span>
+				<strong class="text-2xl">Experienced barbers</strong>
+				<small class="text-sm text-[#87918b]">We know what suits you</small>
+			</div>
+			<div
+				class="grid grid-cols-[2.6rem_1fr] gap-x-3 border-b border-[#dce1dc] py-3 md:border-b-0 md:border-r md:px-8"
+			>
+				<span
+					class="row-span-2 flex h-9 w-9 items-center justify-center rounded-full bg-[#e7eee8] text-[#b55b3e]"
+				>
+					<Icon name="lucide:clock-3" class="size-4" aria-hidden="true" />
+				</span>
+				<strong class="text-2xl">No waiting</strong>
+				<small class="text-sm text-[#87918b]">Arrive exactly on time</small>
+			</div>
+			<div
+				class="grid grid-cols-[2.6rem_1fr] gap-x-3 py-3 md:px-8 md:last:pr-0"
+			>
+				<span
+					class="row-span-2 flex h-9 w-9 items-center justify-center rounded-full bg-[#e7eee8] text-[#b55b3e]"
+				>
+					<Icon
+						name="lucide:calendar-check-2"
+						class="size-4"
+						aria-hidden="true"
+					/>
+				</span>
+				<strong class="text-2xl">Easy online booking</strong>
+				<small class="text-sm text-[#87918b]">Book in a few clicks, 24/7</small>
+			</div>
+		</section>
+
+		<section id="services" class="pt-20 lg:pt-28">
+			<div
+				class="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end"
+			>
+				<div>
+					<p
+						class="mb-5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#b55b3e]"
+					>
+						WHAT WE DO
+					</p>
+					<h2
+						class="font-serif text-[clamp(2.6rem,4vw,4.4rem)] font-normal leading-[0.95] tracking-tighter"
+					>
+						Choose your<br />
+						<em class="italic text-[#b55b3e]">best look.</em>
+					</h2>
+				</div>
+				<p
+					class="mb-1 text-left text-xs leading-6 text-[#89928d] md:text-right"
+				>
+					No unnecessary moves.<br />Only what works.
+				</p>
+			</div>
+			<ServicesList :services="services" />
+		</section>
+	</div>
 </template>
