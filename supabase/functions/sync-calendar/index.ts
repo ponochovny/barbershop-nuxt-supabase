@@ -12,12 +12,14 @@ class RetryableTimeoutError extends Error {
 async function fetchGoogleWithDeadline(
   input: string,
   init: RequestInit,
-): Promise<Response> {
+  consume: (response: Response) => Promise<ResponseData>,
+): Promise<ResponseData> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), GOOGLE_API_TIMEOUT_MS)
 
   try {
-    return await fetch(input, { ...init, signal: controller.signal })
+    const response = await fetch(input, { ...init, signal: controller.signal })
+    return await consume(response)
   } catch (error) {
     if (controller.signal.aborted) {
       throw new RetryableTimeoutError(
@@ -31,29 +33,40 @@ async function fetchGoogleWithDeadline(
   }
 }
 
+type ResponseData = {
+  response: Response
+  body?: string
+  data?: { access_token?: string }
+}
+
 // Function to exchange Refresh Token for Access Token
 async function getGoogleAccessToken() {
-  const response = await fetchGoogleWithDeadline(
+  const result = await fetchGoogleWithDeadline(
     'https://oauth2.googleapis.com/token',
     {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: Deno.env.get('GOOGLE_CLIENT_ID') || '',
-      client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET') || '',
-      refresh_token: Deno.env.get('GOOGLE_REFRESH_TOKEN') || '',
-      grant_type: 'refresh_token',
-    }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: Deno.env.get('GOOGLE_CLIENT_ID') || '',
+        client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET') || '',
+        refresh_token: Deno.env.get('GOOGLE_REFRESH_TOKEN') || '',
+        grant_type: 'refresh_token',
+      }),
+    },
+    async (response) => {
+      if (!response.ok) {
+        return { response, body: await response.text() }
+      }
+
+      return { response, data: await response.json() }
     },
   )
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Auth Error: ${errorText}`);
+  if (!result.response.ok) {
+    throw new Error(`Auth Error: ${result.body}`)
   }
 
-  const data = await response.json();
-  return data.access_token;
+  return result.data?.access_token
 }
 
 Deno.serve(async (req) => {
@@ -91,7 +104,7 @@ Deno.serve(async (req) => {
       };
 
       // Sending an event to the calendar
-    const calendarRes = await fetchGoogleWithDeadline(
+    const calendarResult = await fetchGoogleWithDeadline(
       'https://www.googleapis.com/calendar/v3/calendars/primary/events',
       {
         method: 'POST',
@@ -100,17 +113,21 @@ Deno.serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(event),
-        },
+      },
+      async (response) => ({
+        response,
+        body: response.ok ? undefined : await response.text(),
+      }),
     )
 
-      if (calendarRes.status === 409) {
+      if (calendarResult.response.status === 409) {
         return new Response(JSON.stringify({ success: true, duplicate: true }), {
           headers: { 'Content-Type': 'application/json' },
         });
       }
 
-      if (!calendarRes.ok) {
-        throw new Error(`Calendar API Error: ${await calendarRes.text()}`);
+      if (!calendarResult.response.ok) {
+        throw new Error(`Calendar API Error: ${calendarResult.body}`);
       }
 
       return new Response(JSON.stringify({ success: true }), { 

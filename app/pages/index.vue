@@ -8,18 +8,33 @@ type Service = Database['public']['Tables']['services']['Row']
 
 const services = ref<Service[]>([])
 const servicesError = ref<string | null>(null)
+const servicesLoading = ref(false)
+let servicesRequestGeneration = 0
 
 async function fetchServices() {
-	const { data, error } = await supabase.from('services').select('*')
+	if (servicesLoading.value) return
 
-	if (error) {
-		servicesError.value = error.message
-		services.value = []
-		return
+	const requestGeneration = ++servicesRequestGeneration
+	servicesLoading.value = true
+
+	try {
+		const { data, error } = await supabase.from('services').select('*')
+
+		if (requestGeneration !== servicesRequestGeneration) return
+
+		if (error) {
+			servicesError.value = error.message
+			services.value = []
+			return
+		}
+
+		servicesError.value = null
+		services.value = data ?? []
+	} finally {
+		if (requestGeneration === servicesRequestGeneration) {
+			servicesLoading.value = false
+		}
 	}
-
-	servicesError.value = null
-	services.value = data ?? []
 }
 
 await fetchServices()
@@ -194,11 +209,17 @@ await fetchServices()
 				</p>
 				<button
 					type="button"
-					class="inline-flex items-center gap-2 bg-[#18201e] px-4 py-2 text-xs font-extrabold uppercase tracking-wide text-white transition hover:bg-[#b55b3e]"
+					:disabled="servicesLoading"
+					class="inline-flex items-center gap-2 bg-[#18201e] px-4 py-2 text-xs font-extrabold uppercase tracking-wide text-white transition hover:bg-[#b55b3e] disabled:cursor-not-allowed disabled:opacity-60"
 					@click="fetchServices"
 				>
-					<Icon name="lucide:refresh-cw" class="size-4" aria-hidden="true" />
-					Retry
+					<Icon
+						name="lucide:refresh-cw"
+						class="size-4"
+						:class="{ 'animate-spin': servicesLoading }"
+						aria-hidden="true"
+					/>
+					{{ servicesLoading ? 'Retrying...' : 'Retry' }}
 				</button>
 			</div>
 			<ServicesList v-else :services="services" />
